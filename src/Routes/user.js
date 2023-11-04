@@ -1,5 +1,6 @@
 const express = require("express");
 const User = require("../Database/Schema/user");
+const user = require("../Database/Schema/user");
 const router = express.Router();
 
 async function getAllUsers(){
@@ -8,19 +9,6 @@ async function getAllUsers(){
       return user;
     }catch(e){
       return e.message;
-    }
-}
-
-async function findUser(name){
-    let user_id;
-    try{
-        const user = await User.findOne({name:name})
-        if(user && user._id){
-            user_id = user._id
-        }
-        
-    }catch(e){
-        console.log(e)
     }
 }
 
@@ -39,6 +27,7 @@ async function createUser(data){
       const user = await User.create({
         name:data.name,
         age:data.age,
+        email:data.email
       })
       const obj ={
         id:user._id,
@@ -52,10 +41,17 @@ async function createUser(data){
 
   //User Routes goes here
 
-router.get("/get", (req, res) => {
-    getAllUsers().then(_res => res.send(_res))
+router.get("/get",async (req, res) => {
+    const body = req.body;
+    if(body && body.id){
+      const user = await User.findById(body.id)
+      console.log(user)
+      res.send(user)
+    }else{
+      getAllUsers().then(_res => res.send(_res))
+    }
   });
-  
+
 router.post("/create",(req,res) => {
     try{
       const body = req.body;
@@ -69,18 +65,23 @@ router.post("/create",(req,res) => {
     }
 })
 
-router.delete("/:id",async (req,res) => {
+router.delete("/delete",async (req,res) => {
+  if(req.body && req.body.id){
     try{
-        const deleted = await deleteUser(req.params.id)
+        const deleted = await deleteUser(req.body.id)
+        console.log(deleted)
         if(deleted.acknowledged){
-            res.send(deleted.deleteCount + " User deleted successfully")
+            res.send(deleted.deletedCount + " User deleted successfully")
         }else{
             res.status(500).send("Something went wrong")
         }
     }catch(e){
-        res.status(400)
+        res.status(400).send(e.message)
         console.log(e)
     }
+  }else{
+    res.status(500).send("Something went wrong")
+  }
 })
 
 router.post("/update",async (req,res) => {
@@ -89,6 +90,7 @@ router.post("/update",async (req,res) => {
             const user = await User.findById(req.body.id);
             user.name = req.body.data.name || user.name;
             user.age = req.body.data.age || user.age;
+            user.email = req.body.data.email || user.email;
             await user.save()
             res.send("Updated sucessfully")
         }else{
@@ -99,4 +101,4 @@ router.post("/update",async (req,res) => {
     }
 })
 
-  module.exports = router;
+module.exports = router;
