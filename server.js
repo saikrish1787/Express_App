@@ -3,10 +3,11 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-const userRouter = require('./src/Routes/user');
+const userRouter = require('./src/Routes/user.js');
 const productRouter = require('./src/Routes/product');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
+const passport = require('passport');
 
 const app = express();
 app.listen(process.env.PORT);
@@ -23,6 +24,8 @@ app.use(
 		},
 	})
 );
+app.use(passport.initialize());
+app.use(passport.session());
 app.use('/user', userRouter);
 app.use('/products', productRouter);
 
