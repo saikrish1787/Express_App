@@ -20,20 +20,22 @@ async function findProduct(productId) {
 	}
 }
 
+//? Product routes goes here
+
 router.get('/get', checkSchema(createGetProductSchema), async (req, res) => {
-	const result = validationResult(req);
-	const errors = result.array();
-	console.log(errors);
+	const result = validationResult(req); //Returns the validation result
+	const errors = result.array(); //Getting the errors as an array
 	if (errors.length) {
 		res.status(401).send(errors[0].msg);
 	} else {
 		const products = await Product.find();
-		const productId = req.body.productId;
+		const productId = req.body.productId; //Getting the product ID
 		if (productId) {
-			const prod = products.find((product) => product.productId === Number(productId));
+			const prod = products.find((product) => product.productId === Number(productId)); //Finding the product
 			res.send(prod);
 		} else {
 			try {
+				//If no product ID is passed returning all the users
 				const products = await Product.find();
 				res.send(products);
 			} catch (e) {

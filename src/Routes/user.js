@@ -3,8 +3,12 @@ const passport = require('passport');
 const express = require('express');
 const router = express.Router();
 const { Strategy } = require('passport-local');
+const { validationResult, checkSchema } = require('express-validator');
+const { createUpdateCartSchema } = require('../utils/validationSchemas.js');
+const Product = require('../Database/Schema/product.js');
 
-//Passport authenticate config
+//?Passport authenticate config
+
 passport.use(
 	new Strategy(async (name, password, done) => {
 		try {
@@ -33,6 +37,8 @@ passport.deserializeUser(async (id, done) => {
 		done(err, null);
 	}
 });
+
+//? Helper functions goes here
 
 /**
  * Get the user by ID
@@ -82,6 +88,10 @@ async function deleteUser(userId) {
 	}
 }
 
+/**
+ * Creates a new user
+ * @param {object} data
+ */
 async function createUser(data) {
 	try {
 		const user = await User.create({
@@ -101,7 +111,7 @@ async function createUser(data) {
 }
 
 /**
- *
+ * Get's the user using name and password
  * @param {string} name
  * @param {string} password
  * @returns {object} user
@@ -129,7 +139,7 @@ async function getUser(name, password) {
 	}
 }
 
-//User Routes goes here
+//? User Routes goes here
 
 router.get('/get', async (req, res) => {
 	const body = req.body;
@@ -189,14 +199,57 @@ router.post('/update', async (req, res) => {
 	}
 });
 
+//Route to update cart items
+router.post('/updateCart', checkSchema(createUpdateCartSchema), async (req, res) => {
+	if (req.user) {
+		const result = validationResult(req);
+		const errors = result.array();
+		if (errors.length) {
+			res.status(400).send(errors[0].msg);
+		} else {
+			try {
+				const productObj = await Product.find({}, { productId: 1, _id: 0 });
+				let productIds = [];
+				productObj.forEach((obj) => {
+					productIds.push(obj.productId + ''); //Getting id values and converting it to string for the comparison
+					console.log(typeof obj);
+					// console.log(Object.values(obj));
+				});
+				const userId = req.user.id;
+				const user = await User.findById(userId);
+				const cartItems = req.body.cartItems;
+				//Getting the unmatched ids from the request body
+				//! Reference:https://stackoverflow.com/questions/40537972/compare-2-arrays-and-show-unmatched-elements-from-array-1
+				const unMatched = cartItems.filter(function (n) {
+					return !this.has(n);
+				}, new Set(productIds));
+				if (unMatched.length > 0) {
+					res.status(400).send({ invalid_IDS: unMatched });
+				} else {
+					user.cartItems = cartItems;
+					user.save();
+					res.sendStatus(200);
+				}
+			} catch (e) {
+				console.error(e);
+			}
+		}
+	} else {
+		res.sendStatus(401);
+	}
+});
+
+//Router to authenticate the user
 router.post('/auth', passport.authenticate('local'), async (req, res) => {
 	res.sendStatus(200);
 });
 
+//Router to check the authentication status
 router.get('/auth/status', (req, res) => {
 	req.user ? res.send({ status: 'User logged in', ...req.user }) : res.sendStatus(401);
 });
 
+//Router to logout the authenticated user
 router.get('/auth/logout', (req, res) => {
 	if (!req.user) {
 		res.sendStatus(401);

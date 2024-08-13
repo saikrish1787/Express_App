@@ -39,4 +39,17 @@ const createGetProductSchema = {
 	},
 };
 
-module.exports = { createUpdateProductSchema, createGetProductSchema };
+const createUpdateCartSchema = {
+	cartItems: {
+		isArray: {
+			errorMessage: 'Cart items must be an array of strings',
+			options: { min: 1 }, // Optional: Enforce a minimum length
+		},
+		custom: {
+			options: (value) => value.every((item) => typeof item === 'string'),
+			errorMessage: 'Cart items must contain only strings',
+		},
+	},
+};
+
+module.exports = { createUpdateProductSchema, createGetProductSchema, createUpdateCartSchema };
