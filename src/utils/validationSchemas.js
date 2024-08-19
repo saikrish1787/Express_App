@@ -52,4 +52,52 @@ const createUpdateCartSchema = {
 	},
 };
 
-module.exports = { createUpdateProductSchema, createGetProductSchema, createUpdateCartSchema };
+const createAddProductSchema = {
+	title: {
+		isLength: {
+			options: {
+				min: 10,
+				max: 100,
+			},
+			errorMessage: 'Title name has to be between 10 to 100 letters',
+		},
+	},
+	description: {
+		isLength: {
+			options: {
+				min: 10,
+				max: 100,
+			},
+			errorMessage: 'Description has to be between 10 to 100 letters',
+		},
+	},
+	image: {
+		isLength: {
+			options: {
+				min: 10,
+			},
+			errorMessage: 'Image link has to be more than 10 letters',
+		},
+	},
+	price: {
+		isNumeric: {
+			errorMessage: 'Price should be a number',
+		},
+	},
+	category: {
+		isLength: {
+			options: {
+				min: 5,
+			},
+			errorMessage: 'Category has to be more than 5 letters',
+		},
+	},
+	stock: {
+		isNumeric: {
+			errorMessage: 'Product id should be a number',
+		},
+		optional: true,
+	},
+};
+
+module.exports = { createUpdateProductSchema, createGetProductSchema, createUpdateCartSchema, createAddProductSchema };

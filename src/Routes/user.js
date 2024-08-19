@@ -208,12 +208,11 @@ router.post('/updateCart', checkSchema(createUpdateCartSchema), async (req, res)
 			res.status(400).send(errors[0].msg);
 		} else {
 			try {
-				const productObj = await Product.find({}, { productId: 1, _id: 0 });
+				//! Reference:https://stackoverflow.com/questions/25589113/how-to-select-a-single-field-for-all-documents-in-a-mongodb-collection
+				const productArrOfObj = await Product.find({}, { productId: 1, _id: 0 }); //All the product ids with the mongo db key
 				let productIds = [];
-				productObj.forEach((obj) => {
+				productArrOfObj.forEach((obj) => {
 					productIds.push(obj.productId + ''); //Getting id values and converting it to string for the comparison
-					console.log(typeof obj);
-					// console.log(Object.values(obj));
 				});
 				const userId = req.user.id;
 				const user = await User.findById(userId);
@@ -224,11 +223,11 @@ router.post('/updateCart', checkSchema(createUpdateCartSchema), async (req, res)
 					return !this.has(n);
 				}, new Set(productIds));
 				if (unMatched.length > 0) {
-					res.status(400).send({ invalid_IDS: unMatched });
+					res.status(400).send({ INVALID_IDS: unMatched });
 				} else {
 					user.cartItems = cartItems;
 					user.save();
-					res.sendStatus(200);
+					res.status(200).send({ msg: 'Cart has been updated.' });
 				}
 			} catch (e) {
 				console.error(e);

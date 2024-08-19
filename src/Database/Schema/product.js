@@ -7,6 +7,7 @@ const productSchema = new mongoose.Schema({
 	description: String,
 	category: String,
 	isFavorite: Boolean,
+	stock: Number,
 });
 
 module.exports = mongoose.model('Products', productSchema);

@@ -1,7 +1,7 @@
 const express = require('express');
 const Product = require('../Database/Schema/product');
-const { query, validationResult, checkSchema, matchedData } = require('express-validator');
-const { createUpdateProductSchema, createGetProductSchema } = require('../utils/validationSchemas');
+const { validationResult, checkSchema, matchedData } = require('express-validator');
+const { createUpdateProductSchema, createGetProductSchema, createAddProductSchema } = require('../utils/validationSchemas');
 const router = express.Router();
 
 /**
@@ -20,11 +20,19 @@ async function findProduct(productId) {
 	}
 }
 
+/**
+ * Helper function to update every data in a collection.
+ */
+async function updateEverything() {
+	const res = await Product.updateMany({}, { stock: 50 });
+	console.log(res);
+}
+
 //? Product routes goes here
 
 router.get('/get', checkSchema(createGetProductSchema), async (req, res) => {
-	const result = validationResult(req); //Returns the validation result
-	const errors = result.array(); //Getting the errors as an array
+	const result = validationResult(req); //Returns the validation result.
+	const errors = result.array(); //Getting the errors as an array.
 	if (errors.length) {
 		res.status(401).send(errors[0].msg);
 	} else {
@@ -42,6 +50,50 @@ router.get('/get', checkSchema(createGetProductSchema), async (req, res) => {
 				res.status(400).send('Something went wrong');
 			}
 		}
+	}
+});
+
+//!Have to test this route
+router.post('/addProduct', checkSchema(createAddProductSchema), async (req, res) => {
+	const result = validationResult(req); //Returns the validation result.
+	const errors = result.array(); //Getting the errors as an array.
+	if (errors.length) {
+		res.status(401).send(errors[0].msg);
+	} else {
+		try {
+			const productCount = await Product.count();
+			const prod = await Product.create({
+				isFavorite: false,
+				productId: productCount + 1,
+				isFavorite: false,
+				stock: req.body.stock ? req.body.stock : 50,
+				rating: {
+					rate: '5.0',
+					count: 0,
+				},
+				...req.body,
+			});
+			res.status(200).send(prod);
+		} catch (e) {
+			console.error(e);
+		}
+	}
+});
+
+router.post('/updateStock/:id', async (req, res) => {
+	if (req.user) {
+		try {
+			const productId = Number(req.params.id);
+			const product = await findProduct(productId);
+			product.stock = req.body.stock;
+			product.save();
+			res.status(200).send({ msg: 'Stock has been updated successfully' });
+			console.log(product);
+		} catch (e) {
+			console.log(e);
+		}
+	} else {
+		res.status(401).send({ msg: 'Please login to access' });
 	}
 });
 
