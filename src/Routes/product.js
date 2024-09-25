@@ -53,30 +53,34 @@ router.get('/get', checkSchema(createGetProductSchema), async (req, res) => {
 	}
 });
 
-//!Have to test this route
+//! On 'price' column "500" and 500 are same and no errors will be returned by the express validator.
 router.post('/addProduct', checkSchema(createAddProductSchema), async (req, res) => {
-	const result = validationResult(req); //Returns the validation result.
-	const errors = result.array(); //Getting the errors as an array.
-	if (errors.length) {
-		res.status(401).send(errors[0].msg);
-	} else {
-		try {
-			const productCount = await Product.count();
-			const prod = await Product.create({
-				isFavorite: false,
-				productId: productCount + 1,
-				isFavorite: false,
-				stock: req.body.stock ? req.body.stock : 50,
-				rating: {
-					rate: '5.0',
-					count: 0,
-				},
-				...req.body,
-			});
-			res.status(200).send(prod);
-		} catch (e) {
-			console.error(e);
+	if (req.user) {
+		const result = validationResult(req); //Returns the validation result.
+		const errors = result.array(); //Getting the errors as an array.
+		if (errors.length) {
+			res.status(401).send(errors[0].msg);
+		} else {
+			try {
+				const productCount = await Product.count();
+				const prod = await Product.create({
+					isFavorite: false,
+					productId: productCount + 1,
+					isFavorite: false,
+					stock: req.body.stock ? req.body.stock : 50,
+					rating: {
+						rate: '5.0',
+						count: 0,
+					},
+					...req.body,
+				});
+				res.status(200).send(prod);
+			} catch (e) {
+				console.error(e);
+			}
 		}
+	} else {
+		res.status(401).send({ msg: 'Please login to access' });
 	}
 });
 
