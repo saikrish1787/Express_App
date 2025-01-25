@@ -151,13 +151,19 @@ router.get('/get', async (req, res) => {
 	}
 });
 
-router.post('/create', (req, res) => {
+router.post('/create', async (req, res) => {
 	try {
 		const body = req.body;
-		if (body.name && body.password && typeof body.age === 'number') {
-			createUser(body).then((_res) => res.send(_res));
+		//Checking for the name, if it is already exist.
+		const existingUser = await User.findOne({ name: body.name });
+		if (existingUser) {
+			res.status(400).send('Username already exists...');
 		} else {
-			res.send('Something went wrong');
+			if (body.name && body.password && typeof body.age === 'number') {
+				createUser(body).then((_res) => res.send(_res));
+			} else {
+				res.send('Something went wrong');
+			}
 		}
 	} catch (e) {
 		console.error(e);

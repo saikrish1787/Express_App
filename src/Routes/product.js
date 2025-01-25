@@ -20,14 +20,6 @@ async function findProduct(productId) {
 	}
 }
 
-/**
- * Helper function to update every data in a collection.
- */
-async function updateEverything() {
-	const res = await Product.updateMany({}, { stock: 50 });
-	console.log(res);
-}
-
 //? Product routes goes here
 
 router.get('/get', checkSchema(createGetProductSchema), async (req, res) => {
