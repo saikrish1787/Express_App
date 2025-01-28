@@ -118,6 +118,7 @@ async function createUser(data) {
  */
 async function getUser(name, password) {
 	try {
+		//Converting name and password to String
 		let user = await User.find({ name: name + '', password: password + '' }, (err, docs) => {
 			if (docs.length) {
 				return docs;

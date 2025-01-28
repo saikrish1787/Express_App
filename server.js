@@ -29,15 +29,16 @@ app.use(passport.session());
 app.use('/user', userRouter);
 app.use('/products', productRouter);
 
-mongoose.connect(
-	`${process.env.DB_HOST}`,
-	() => {
-		console.log('Database Connected');
-	},
-	(e) => {
-		console.log('Unable to connect to the Database ' + e.message);
-	}
-);
+mongoose.connect(`${process.env.DB_HOST}`);
+
+//? Callback functions for the database connection events.
+mongoose.connection.on('connected', () => {
+	console.log('Database Connected');
+});
+
+mongoose.connection.on('error', (e) => {
+	console.log('Unable to connect to the Database ' + e.message);
+});
 
 app.get('/', (req, res) => {
 	res.cookie('isSession', 'true', { maxAge: 60000 * 60, signed: true });
