@@ -1,5 +1,5 @@
 const express = require('express');
-const Product = require('../Database/Schema/product');
+const Product = require('../Database/Schema/product'); // Product Schema
 const { validationResult, checkSchema, matchedData } = require('express-validator');
 const { createUpdateProductSchema, createGetProductSchema, createAddProductSchema } = require('../utils/validationSchemas');
 const router = express.Router();
