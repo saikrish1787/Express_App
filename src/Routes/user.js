@@ -74,6 +74,7 @@ async function getAllUsers() {
 		return e.message;
 	}
 }
+
 /**
  * This function will delete the user.
  * @param {number} userId  ID of the user to be Deleted.
