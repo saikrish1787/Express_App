@@ -22,3 +22,13 @@ async function updateEverything(Schema, key, value = 0) {
 		console.error(e);
 	}
 }
+
+export function errorHandlingMiddleware(err, req, res, next) {
+	if (err instanceof ValidationError) {
+		res.status(400).json({ message: err.message });
+	} else if (err instanceof DuplicateError) {
+		res.status(409).json({ message: err.message });
+	} else {
+		res.status(500).json({ message: 'Internal server error' });
+	}
+}

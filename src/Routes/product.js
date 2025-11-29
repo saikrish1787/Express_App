@@ -7,14 +7,14 @@ const router = express.Router();
 /**
  * Find's the product by it's product id and return's the product
  * @param {number} productId ID of the Product
- * @returns {Object} product
+ * @returns {Promise} returns Promise for the product
  */
 async function findProduct(productId) {
 	if (!productId) {
 		return {};
 	}
 	try {
-		const product = await Product.findOne({
+		const product = Product.findOne({
 			productId: productId,
 		});
 		return product;
@@ -25,28 +25,25 @@ async function findProduct(productId) {
 
 //? Product routes goes here
 
-router.get('/get/', checkSchema(createGetProductSchema), async (req, res) => {
+router.get('/get', checkSchema(createGetProductSchema), async (req, res) => {
 	const result = validationResult(req); //Returns the validation result.
 	const errors = result.array(); //Getting the errors as an array.
 	if (errors.length) {
-		res.status(401).send(errors[0].msg);
+		res.status(400).send(errors[0].msg);
 	} else {
 		const productId = req.body.productId; //Getting the product ID
 		if (productId) {
 			const prod = await findProduct(productId); //Finding the product
+			console.log(prod);
 			if (prod) {
 				res.send({ data: prod, status: 1 });
 			} else {
 				res.send({ status: 0, reason: 'There is no product found on given ID' });
 			}
 		} else {
-			try {
-				//If no product ID is passed returning all the users
-				const products = await Product.find();
-				res.send({ data: products, status: 1 });
-			} catch (e) {
-				res.status(400).send('Something went wrong');
-			}
+			//If no product ID is passed returning all the users
+			const products = await Product.find();
+			res.send({ data: products, status: 1 });
 		}
 	}
 });
@@ -57,7 +54,7 @@ router.post('/addProduct', checkSchema(createAddProductSchema), async (req, res)
 		const result = validationResult(req); //Returns the validation result.
 		const errors = result.array(); //Getting the errors as an array.
 		if (errors.length) {
-			res.status(401).send(errors[0].msg);
+			res.status(400).send(errors[0].msg);
 		} else {
 			try {
 				const productCount = await Product.count();
@@ -84,16 +81,12 @@ router.post('/addProduct', checkSchema(createAddProductSchema), async (req, res)
 
 router.post('/updateStock/:id', async (req, res) => {
 	if (req.user) {
-		try {
-			const productId = Number(req.params.id);
-			const product = await findProduct(productId);
-			product.stock = req.body.stock;
-			product.save();
-			res.status(200).send({ msg: 'Stock has been updated successfully' });
-			console.log(product);
-		} catch (e) {
-			console.log(e);
-		}
+		const productId = Number(req.params.id);
+		const product = await findProduct(productId);
+		product.stock = req.body.stock;
+		product.save();
+		res.status(200).send({ msg: 'Stock has been updated successfully' });
+		console.log(product);
 	} else {
 		res.status(401).send({ msg: 'Please login to access' });
 	}
@@ -109,15 +102,11 @@ router.post('/update/:id', checkSchema(createUpdateProductSchema), async (req, r
 		const matchedBodyData = matchedData(req); //Getting the matched request body data.
 		const { isFavorite, price, title } = matchedBodyData;
 		const product = await findProduct(productId);
-		try {
-			if (isFavorite) product.isFavorite = isFavorite;
-			if (price) product.price = price;
-			if (title) product.title = title;
-			await product.save();
-			res.send('Updated Successfully');
-		} catch (e) {
-			res.status(400).send('Something went wrong');
-		}
+		if (isFavorite) product.isFavorite = isFavorite;
+		if (price) product.price = price;
+		if (title) product.title = title;
+		await product.save();
+		res.send('Updated Successfully');
 	}
 });
 

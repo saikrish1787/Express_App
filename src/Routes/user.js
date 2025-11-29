@@ -43,7 +43,7 @@ passport.deserializeUser(async (id, done) => {
 /**
  * Get the user by ID
  * @param {number} id
- * @returns {object} user
+ * @returns {Promise} Returns promise of the user
  */
 async function getUserById(id) {
 	if (!id) {
@@ -64,7 +64,7 @@ async function getUserById(id) {
 
 /**
  *This function will return the all available user.
- * @returns {[object]} user
+ * @returns {Promise} Promise of the user
  */
 async function getAllUsers() {
 	try {
@@ -115,7 +115,7 @@ async function createUser(data) {
  * Get's the user using name and password
  * @param {string} name
  * @param {string} password
- * @returns {object} user
+ * @returns {Promise} Returns promise of the user
  */
 async function getUser(name, password) {
 	try {
@@ -144,46 +144,48 @@ async function getUser(name, password) {
 //? User Routes goes here
 
 router.get('/get', async (req, res) => {
-	const body = req.body;
-	if (body && body.id) {
-		const user = await User.findById(body.id);
-		res.send(user);
-	} else {
-		getAllUsers().then((_res) => res.send(_res));
-	}
-});
-
-router.post('/create', async (req, res) => {
-	try {
+	if (req.user) {
 		const body = req.body;
-		//Checking for the name, if it is already exist.
-		const existingUser = await User.findOne({ name: body.name });
-		if (existingUser) {
-			res.status(400).send('Username already exists...');
+		if (body && body.id) {
+			const user = await User.findById(body.id);
+			res.send(user);
 		} else {
-			if (body.name && body.password && typeof body.age === 'number') {
-				createUser(body).then((_res) => res.send(_res));
+			const users = await getAllUsers();
+			if (users) {
+				res.send({ data: users, status: 1 });
 			} else {
-				res.send('Something went wrong');
+				res.send({ status: 0, reason: 'No user Found' });
 			}
 		}
-	} catch (e) {
-		console.error(e);
+	} else {
+		res.status(401).send('Unauthorized, Please login to Continue');
 	}
 });
 
+//Route to Create the user
+router.post('/create', async (req, res) => {
+	const body = req.body;
+	//Checking for the name, if it is already exist.
+	const existingUser = await User.findOne({ name: body.name });
+	if (existingUser) {
+		res.status(400).send('Username already exists...');
+	} else {
+		if (body.name && body.password && typeof body.age === 'number') {
+			createUser(body).then((_res) => res.send(_res));
+		} else {
+			res.send('Something went wrong');
+		}
+	}
+});
+
+//Route to Delete the User
 router.delete('/delete', async (req, res) => {
 	if (req.body && req.body.id) {
-		try {
-			const deleted = await deleteUser(req.body.id);
-			if (deleted.acknowledged) {
-				res.send(deleted.deletedCount + ' User deleted successfully');
-			} else {
-				res.status(500).send('Something went wrong');
-			}
-		} catch (e) {
-			res.status(400).send(e.message);
-			console.error(e);
+		const deleted = await deleteUser(req.body.id);
+		if (deleted.acknowledged) {
+			res.send(deleted.deletedCount + ' User deleted successfully');
+		} else {
+			res.status(500).send('Something went wrong');
 		}
 	} else {
 		res.status(500).send('Something went wrong');
@@ -215,30 +217,26 @@ router.post('/updateCart', checkSchema(createUpdateCartSchema), async (req, res)
 		if (errors.length) {
 			res.status(400).send(errors[0].msg);
 		} else {
-			try {
-				//! Reference:https://stackoverflow.com/questions/25589113/how-to-select-a-single-field-for-all-documents-in-a-mongodb-collection
-				const productArrOfObj = await Product.find({}, { productId: 1, _id: 0 }); //All the product ids with the mongo db key
-				let productIds = [];
-				productArrOfObj.forEach((obj) => {
-					productIds.push(obj.productId + ''); //Getting id values and converting it to string for the comparison
-				});
-				const userId = req.user.id;
-				const user = await User.findById(userId);
-				const cartItems = req.body.cartItems;
-				//Getting the unmatched ids from the request body
-				//! Reference:https://stackoverflow.com/questions/40537972/compare-2-arrays-and-show-unmatched-elements-from-array-1
-				const unMatched = cartItems.filter(function (n) {
-					return !this.has(n);
-				}, new Set(productIds));
-				if (unMatched.length > 0) {
-					res.status(400).send({ INVALID_IDS: unMatched });
-				} else {
-					user.cartItems = cartItems;
-					user.save();
-					res.status(200).send({ msg: 'Cart has been updated.' });
-				}
-			} catch (e) {
-				console.error(e);
+			//! Reference:https://stackoverflow.com/questions/25589113/how-to-select-a-single-field-for-all-documents-in-a-mongodb-collection
+			const productArrOfObj = await Product.find({}, { productId: 1, _id: 0 }); //All the product ids with the mongo db key
+			let productIds = [];
+			productArrOfObj.forEach((obj) => {
+				productIds.push(obj.productId + ''); //Getting id values and converting it to string for the comparison
+			});
+			const userId = req.user.id;
+			const user = await User.findById(userId);
+			const cartItems = req.body.cartItems;
+			//Getting the unmatched ids from the request body
+			//! Reference:https://stackoverflow.com/questions/40537972/compare-2-arrays-and-show-unmatched-elements-from-array-1
+			const unMatched = cartItems.filter(function (n) {
+				return !this.has(n);
+			}, new Set(productIds));
+			if (unMatched.length > 0) {
+				res.status(400).send({ INVALID_IDS: unMatched });
+			} else {
+				user.cartItems = cartItems;
+				user.save();
+				res.status(200).send({ msg: 'Cart has been updated.' });
 			}
 		}
 	} else {

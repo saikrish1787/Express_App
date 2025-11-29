@@ -8,6 +8,7 @@ const productRouter = require('./src/Routes/product');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const passport = require('passport');
+const { errorHandlingMiddleware } = require('./src/utils/utils.js');
 
 const app = express();
 app.listen(process.env.PORT);
@@ -26,6 +27,10 @@ app.use(
 );
 app.use(passport.initialize());
 app.use(passport.session());
+//Middleware function for error handling, Now we can get rid of try,catch,..... on all the routes
+//! Reference:https://www.coreycleary.me/one-way-to-slim-down-bloated-express-controllers
+app.use(errorHandlingMiddleware);
+
 app.use('/user', userRouter);
 app.use('/products', productRouter);
 
